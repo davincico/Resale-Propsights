@@ -13,11 +13,11 @@ One of the simplest sample I found was for React App on S3, we can try to model 
 https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
 ### Group Members
-Amos Kwok Chun Fung
-Davin Hong Hao Yang
-Tay Kar Hwee
-Teo Pei Sheng Nicholas
-Yew Jing Hui
+- Amos Kwok Chun Fung
+- Davin Hong Hao Yang
+- Tay Kar Hwee
+- Teo Pei Sheng Nicholas
+- Yew Jing Hui
 
 ### Working with the Branches
 Main branch is for the finalized code deployment.
