@@ -1,14 +1,28 @@
 # Resale-Propsights
+---
 AWS Hosted Web app for Realtors, Real estate buyers and sellers - Making housing price data transparent and actionable
 
-### Intro
+## Overview
+---
+HDB flats constitute the majority of Singapore’s housing stock, and the resale market plays a crucial role in shaping affordability, property investment decisions, and housing policies. Recognizing the public’s strong interest in HDB market analytics, we present PropSight - The HDB Lens, a cloud-based Software-as-a-Service (SaaS) platform designed to analyze HDB resale prices.
+
+## Intro
+---
 We will be using this repo as staging area for our test web app files and other notes.
 
 One of the simplest sample I found was for React App on S3, we can try to model after this for minimal viable product before adding other features:
 https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
+### Group Members
+---
+Amos Kwok Chun Fung
+Davin Hong Hao Yang
+Tay Kar Hwee
+Teo Pei Sheng Nicholas
+Yew Jing Hui
 
-## Working with the Branches
+### Working with the Branches
+---
 Main branch is for the finalized code deployment.
 
 Development branch for each member, you can upload all your testing files and code to your branch:
