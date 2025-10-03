@@ -10,12 +10,15 @@ https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
 ## Working with the Branches
 Main branch is for the finalized code deployment.
+
 Development branch for each member, you can upload all your testing files and code to your branch:
 - davin_dev
 - jinghui_dev
 - karhwee_dev
 - nicholas_dev
 - amos_dev
+
+
 We will review the code and perform integration weekly.
 
 
