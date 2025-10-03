@@ -1,11 +1,25 @@
 # Resale-Propsights
 AWS Hosted Web app for Realtors, Real estate buyers and sellers - Making housing price data transparent and actionable
 
-### Notes
-We will be using this repo as staging area for our test web app files and other notes
+### Intro
+We will be using this repo as staging area for our test web app files and other notes.
+
+One of the simplest sample I found was for React App on S3, we can try to model after this for minimal viable product before adding other features:
+https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
 
 ## Working with the Branches
+Main branch is for the finalized code deployment.
+Development branch for each member, you can upload all your testing files and code to your branch:
+- davin_dev
+- jinghui_dev
+- karhwee_dev
+- nicholas_dev
+- amos_dev
+We will review the code and perform integration weekly.
+
+
+
 ### 1. Preparing your branch
 Preparing to work on your branch:
 ```python
@@ -31,6 +45,6 @@ git branch
 git add .
 git commit -m "update the xxx file to include yyy"
 git push origin <your_branch_name> # Example - git push origin davin_dev
-# What this does is it pushes your local code changes on your computer to Github online
+# What this does is it pushes your local code changes on your computer to Github online on YOUR BRANCH
 
 ```
