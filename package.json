@@ -1,5 +1,5 @@
 {
-  "name": "demo-app",
+  "name": "davin_dev_workingdir",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -35,14 +35,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@aws-amplify/backend": "^1.16.1",
-    "@aws-amplify/backend-cli": "^1.8.0",
-    "aws-cdk-lib": "^2.204.0",
-    "constructs": "^10.4.2",
-    "esbuild": "^0.25.10",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
   }
 }
