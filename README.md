@@ -12,6 +12,16 @@ We will be using this repo as staging area for our test web app files and other 
 One of the simplest sample I found was for React App on S3, we can try to model after this for minimal viable product before adding other features:
 https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
+### Architecture
+\<insert architecture diagram>
+List of resources:
+- React Web App
+- S3
+- Cloudfront
+- Lambda
+- Amazon Route 53
+
+
 ### Group Members
 - Amos Kwok Chun Fung
 - Davin Hong Hao Yang
@@ -34,7 +44,7 @@ We will review the code and perform integration weekly.
 
 
 
-### 1. Preparing your branch
+#### 1. Preparing your branch
 Preparing to work on your branch:
 ```python
 # First clone the repository
@@ -53,7 +63,7 @@ git branch
 
 ```
 
-### 2. Pushing to the repository 
+#### 2. Pushing to the repository 
 3 steps have to be performed to push changes to github:
 ```python
 git add .
@@ -62,3 +72,4 @@ git push origin <your_branch_name> # Example - git push origin davin_dev
 # What this does is it pushes your local code changes on your computer to Github online on YOUR BRANCH
 
 ```
+
