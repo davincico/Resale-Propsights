@@ -24,4 +24,6 @@ yarn-error.log*
 
 # Comment this out once you have set up GitHub Actions
 .github/
-.github\
+
+# Do not uncomment this line
+.github/notes/
