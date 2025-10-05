@@ -22,5 +22,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Comment this out once you have set up GitHub Actions
 .github/
 .github\
