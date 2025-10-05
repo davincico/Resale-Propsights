@@ -14,6 +14,8 @@ https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
 
 ### Architecture
 \<insert architecture diagram>
+
+
 List of resources:
 - React Web App
 - S3
@@ -21,6 +23,7 @@ List of resources:
 - Lambda
 - Amazon Route 53
 
+Cloudfront allows cacheing, improves performance, allows HTTPs
 
 ### Group Members
 - Amos Kwok Chun Fung
