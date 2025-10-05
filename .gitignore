@@ -1,3 +1,6 @@
+
+# git rm -r --cached tutorials
+# Note that .gitignore only prevents untracked files from being added to Git; it does not remove files that are already tracked. Therefore, you need to remove the folder from Git's tracking and update the repository.
 /tutorials
 /tutorials/
 
