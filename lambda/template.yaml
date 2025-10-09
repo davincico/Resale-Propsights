@@ -1,18 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: XGBoost Lambda for HDB resale price prediction
+Description: XGBoost Lambda for HDB resale price prediction (Docker image)
 
 Resources:
   XGBoostInferenceFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: resale_predict/       # Folder containing app.py and xgb_model.json
-      Handler: app.lambda_handler
-      Runtime: python3.10
+      PackageType: Image                  # Use container image
       MemorySize: 1024
       Timeout: 30
       Policies:
-        # Give Lambda read/write access to the bucket
+        # Give Lambda read/write access to the S3 bucket
         - S3ReadPolicy:
             BucketName: resalehouse
         - S3WritePolicy:
@@ -23,3 +21,7 @@ Resources:
           Properties:
             Path: /predict
             Method: post
+    Metadata:
+      DockerTag: python3.10
+      DockerContext: ./resale_predict
+      Dockerfile: dockerfile
