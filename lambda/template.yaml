@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: XGBoost Lambda for HDB resale price prediction
+
+Resources:
+  XGBoostInferenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: resale_predict/       # Folder containing app.py and xgb_model.json
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      MemorySize: 1024
+      Timeout: 30
+      Policies:
+        # Give Lambda read/write access to the bucket
+        - S3ReadPolicy:
+            BucketName: resalehouse
+        - S3WritePolicy:
+            BucketName: resalehouse
+      Events:
+        ApiTrigger:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: post
