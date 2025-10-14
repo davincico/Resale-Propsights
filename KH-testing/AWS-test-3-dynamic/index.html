@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HDB Resale – Live Query</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem auto; max-width: 960px; line-height: 1.5; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+    .card { border:1px solid #eee; border-radius:12px; padding:1rem; margin:.75rem 0; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    input, select, button { padding:.6rem .8rem; border:1px solid #ddd; border-radius:10px; }
+    button { cursor:pointer; }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .75rem; }
+    @media (max-width:700px){ .grid { grid-template-columns: 1fr; } }
+    small { color:#666; }
+    .muted { color:#666; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HDB Resale – Live Query</h1>
+    <small class="muted">Powered by data.gov.sg (real-time)</small>
+  </header>
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>Town</label><br/>
+        <input id="town" placeholder="e.g. ANG MO KIO">
+      </div>
+      <div>
+        <label>Flat Type</label><br/>
+        <input id="flat_type" placeholder="e.g. 3-Room">
+      </div>
+      <div>
+        <label>Month (YYYY-MM)</label><br/>
+        <input id="month" placeholder="e.g. 2024-07">
+      </div>
+      <div>
+        <label>Price Min / Max</label><br/>
+        <input id="price_min" type="number" placeholder="min"> 
+        <input id="price_max" type="number" placeholder="max">
+      </div>
+    </div>
+    <p>
+      <button id="run">Search</button>
+      <button id="reset">Reset</button>
+      <small class="muted">Tip: leave fields blank to get latest records.</small>
+    </p>
+  </div>
+
+  <div id="status"></div>
+  <div id="results"></div>
+
+  <script>
+    const API = 'https://bkgjnms2f2.execute-api.ap-southeast-1.amazonaws.com/search'; // e.g., https://abc123.execute-api.ap-southeast-1.amazonaws.com/search
+
+    const $ = id => document.getElementById(id);
+    const status = $("status"), results = $("results");
+
+    function qs(obj){
+      const params = new URLSearchParams();
+      for (const [k,v] of Object.entries(obj)){
+        if (v !== undefined && v !== null && String(v).trim() !== "") params.append(k, v);
+      }
+      return params.toString();
+    }
+
+    async function run(){
+      results.innerHTML = ""; status.textContent = "Loading…";
+      const q = {
+        town: $("town").value,
+        flat_type: $("flat_type").value,
+        month: $("month").value,
+        price_min: $("price_min").value,
+        price_max: $("price_max").value,
+        limit: 50,
+        offset: 0
+      };
+      try {
+        const res = await fetch(API + "?" + qs(q));
+        if(!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        status.textContent = `Found ${data.total} records (showing ${data.records.length})`;
+        for (const r of data.records){
+          const div = document.createElement('div');
+          div.className = 'card';
+          div.innerHTML = `
+            <b>${r.town ?? ''} – ${r.flat_type ?? ''}</b><br/>
+            Month: ${r.month ?? ''} | Block: ${r.block ?? ''} ${r.street_name ?? ''}<br/>
+            Storey: ${r.storey_range ?? ''} | Floor Area: ${r.floor_area_sqm ?? ''} sqm<br/>
+            Lease: ${r.remaining_lease ?? r.lease_commence_date ?? ''}<br/>
+            <b>Resale Price: $${Number(r.resale_price ?? 0).toLocaleString()}</b>
+          `;
+          results.appendChild(div);
+        }
+      } catch(e){
+        status.textContent = "Error: " + e.message;
+      }
+    }
+
+    $("run").onclick = run;
+    $("reset").onclick = () => { ["town","flat_type","month","price_min","price_max"].forEach(i => $(i).value=""); results.innerHTML=""; status.textContent=""; };
+  </script>
+</body>
+</html>
