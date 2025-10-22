@@ -32,7 +32,7 @@ export function useResaleData(): UseResaleDataResult {
       setError(null);
       let all: ResaleRecord[] = [];
       let offset = 0;
-      let total = Infinity;
+      let total = 100;
       const limit = 1000;
       try {
         while (offset < total) {
@@ -42,6 +42,7 @@ export function useResaleData(): UseResaleDataResult {
           if (!result.success) throw new Error('API query failed');
           all = all.concat(result.result.records);
           total = result.result.total;
+          console.log(`Fetched ${all.length} of ${total} records`);
           offset += limit;
           if (cancelled) return;
         }

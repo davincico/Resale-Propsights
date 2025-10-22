@@ -1,0 +1,4 @@
+xgboost-cpu
+scikit-learn
+pandas
+boto3

@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
-import type { GridColDef } from '@mui/x-data-grid/models/colDef';
-import { Box, Typography } from '@mui/material';
-import { useResaleData } from './useResaleData';
+// import { DataGrid } from '@mui/x-data-grid';
+// import type { GridColDef } from '@mui/x-data-grid/models/colDef';
+// import { Box, Typography } from '@mui/material';
+// import { useResaleData } from './useResaleData';
 import { Line, Bar, Pie } from 'react-chartjs-2';
+import {getResaleData} from './ResaleData';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,116 +28,131 @@ interface Filters {
 }
 
 const defaultFilters: Filters = {
-  town: '',
-  flatType: '',
+  town: 'all',
+  flatType: 'all',
   maxPrice: 2000000,
 };
 
 const Dashboard: React.FC = () => {
-  const { data, loading, error } = useResaleData();
+  // const { data, loading, error } = useResaleData();
+  // console.log('Data loaded:', data.length, 'records');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
+  const { data, loading, error } = getResaleData(filters.town, filters.flatType);
   // Compute filter options
-  const towns = useMemo(() => Array.from(new Set(data.map(d => d.town))).sort(), [data]);
-  const flatTypes = useMemo(() => Array.from(new Set(data.map(d => d.flat_type))).sort(), [data]);
-  const maxSlider = useMemo(() => {
-    if (data.length === 0) return 2000000;
-    return Math.ceil(Math.max(...data.map(d => parseInt(d.resale_price))) / 50000) * 50000;
-  }, [data]);
+  const towns = ["ANG MO KIO","BEDOK","BISHAN","BUKIT BATOK","BUKIT MERAH","BUKIT PANJANG","BUKIT TIMAH","CENTRAL AREA","CHOA CHU KANG","CLEMENTI","GEYLANG","HOUGANG","JURONG EAST","JURONG WEST","KALLANG/WHAMPOA","MARINE PARADE","PASIR RIS","PUNGGOL","QUEENSTOWN","SEMBAWANG","SENGKANG","SERANGOON","TAMPINES","TOA PAYOH","WOODLANDS","YISHUN"];
+  const flatTypes = ['1 ROOM', '2 ROOM', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE', 'MULTI-GENERATION'];
+  // const maxSlider = useMemo(() => {
+  //   if (data?.total_sales === 0) return 2000000;
+  //   return Math.ceil(Math.max(...data.map(d => parseInt(d.resale_price))) / 50000) * 50000;
+  // }, [data]);
+  const maxSlider = 2000000;
 
   // Filtered data
-  const filteredData = useMemo(() =>
-    data.filter(row =>
-      (!filters.town || row.town === filters.town) &&
-      (!filters.flatType || row.flat_type === filters.flatType) &&
-      parseInt(row.resale_price) <= filters.maxPrice
-    ),
-    [data, filters]
-  );
+  // const filteredData = useMemo(() =>
+  //   data.filter(row =>
+  //     (!filters.town || row.town === filters.town) &&
+  //     (!filters.flatType || row.flat_type === filters.flatType) &&
+  //     parseInt(row.resale_price) <= filters.maxPrice
+  //   ),
+  //   [data, filters]
+  // );
 
   // Chart data: Flat Type Distribution (Pie)
   const flatTypePie = useMemo(() => {
-    const flatData: Record<string, number> = {};
-    filteredData.forEach(row => {
-      const type = row.flat_type;
-      flatData[type] = (flatData[type] || 0) + 1;
-    });
-    const total = filteredData.length;
-    const labels = Object.keys(flatData).sort();
-    const counts = labels.map(type => flatData[type]);
-    const percentages = counts.map(c => ((c / total) * 100).toFixed(1));
-    const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#17a2b8'];
-    return {
-      labels: labels.map((l, i) => `${l} (${percentages[i]}%)`),
-      datasets: [
-        {
-          data: counts,
-          backgroundColor: colors.slice(0, labels.length),
-        },
-      ],
-    };
-  }, [filteredData]);
+  if (!data?.flat_type_distribution) return { labels: [], datasets: [] };
+
+  const distribution = data.flat_type_distribution;
+  // const total = Object.values(distribution).reduce((sum, v) => sum + v, 0);
+  const labels = Object.keys(distribution).sort();
+  const counts = labels.map(type => distribution[type]);
+  const percentages = counts.map(c => ((c / data?.total_sales) * 100).toFixed(1));
+  const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#17a2b8'];
+
+  return {
+    labels: labels.map((l, i) => `${l} (${percentages[i]}%)`),
+    datasets: [
+      {
+        data: counts,
+        backgroundColor: colors.slice(0, labels.length),
+      },
+    ],
+  };
+}, [data?.flat_type_distribution]);
+
 
   // Stats
-  const totalSales = filteredData.length;
-  const avgPrice = totalSales ? Math.round(filteredData.reduce((sum, d) => sum + parseInt(d.resale_price), 0) / totalSales) : 0;
-  const latestMonth = filteredData.length ? filteredData.slice().sort((a, b) => new Date(b.month).getTime() - new Date(a.month).getTime())[0].month : '-';
-  const maxPrice = filteredData.length ? Math.max(...filteredData.map(d => parseInt(d.resale_price))) : 0;
+  const totalSales = data?.total_sales || 0;
+  const avgPrice = totalSales ? Math.round(data?.average_price ?? 0) : 0;
+  const latestMonth = data?.latest_month || '-';
+  const maxPrice = totalSales ? Math.round(data?.max_price ?? 0) : 0;
 
   // Chart data: Average resale price by town
   const priceByTown = useMemo(() => {
-    const townData: Record<string, { total: number; count: number }> = {};
-    filteredData.forEach(row => {
-      const town = row.town;
-      const price = parseInt(row.resale_price);
-      if (!townData[town]) townData[town] = { total: 0, count: 0 };
-      townData[town].total += price;
-      townData[town].count += 1;
-    });
-    const labels = Object.keys(townData).sort((a, b) => {
-      const avgA = townData[a].total / townData[a].count;
-      const avgB = townData[b].total / townData[b].count;
-      return avgB - avgA;
-    });
-    const prices = labels.map(town => Math.round(townData[town].total / townData[town].count));
+  if (!data?.avg_price_by_flat_type_by_town) return { labels: [], datasets: [] };
+
+    const townData = data.avg_price_by_flat_type_by_town;
+
+    const filtered_towns = Object.keys(townData).sort(); // X-axis labels
+    const filtered_flatTypes = Array.from(
+      new Set(filtered_towns.flatMap(t => Object.keys(townData[t])))
+    ).sort();
+
+    const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#17a2b8'];
+
+    const datasets = filtered_flatTypes.map((ft, i) => ({
+      label: ft,
+      data: filtered_towns.map(town => Math.round(townData[town][ft] ?? 0)), // 0 if missing
+      backgroundColor: colors[i % colors.length],
+    }));
+
     return {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Price (SGD)',
-          data: prices,
-          backgroundColor: '#007bff',
-        },
-      ],
+      labels: filtered_towns,
+      datasets,
     };
-  }, [filteredData]);
+  }, [data?.avg_price_by_flat_type_by_town]);
 
   // Chart data: Average resale price over time
   const priceOverTime = useMemo(() => {
-    const monthly: Record<string, { total: number; count: number }> = {};
-    filteredData.forEach(row => {
-      const month = row.month;
-      const price = parseInt(row.resale_price);
-      if (!monthly[month]) monthly[month] = { total: 0, count: 0 };
-      monthly[month].total += price;
-      monthly[month].count += 1;
+    if (!data?.avg_price_by_flat_type_by_month) return { labels: [], datasets: [] };
+
+    const flatData = data.avg_price_by_flat_type_by_month;
+
+    // Extract all months across all flat types and sort them
+    const months = Array.from(
+      new Set(Object.values(flatData).flatMap(d => Object.keys(d)))
+    ).sort();
+
+    const filtered_flatTypes = Object.keys(flatData);
+
+    const colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#17a2b8'];
+
+    const datasets = filtered_flatTypes.map((ft, i) => {
+      // Build data with nulls for missing points
+      const dataPoints = months.map(month => {
+        const val = flatData[ft][month];
+        return val !== undefined && val !== null && val !== -1 ? Math.round(val) : null;
+      });
+
+      return {
+        label: ft,
+        data: dataPoints,
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '33',
+        fill: true,
+        tension: 0.1,
+        spanGaps: false, // <-- ensures line breaks at null
+        borderDash: dataPoints.includes(null) ? [5, 5] : [], // <-- dashed line if there are nulls
+      };
     });
-    const labels = Object.keys(monthly).sort();
-    const prices = labels.map(month => Math.round(monthly[month].total / monthly[month].count));
+
     return {
-      labels,
-      datasets: [
-        {
-          label: 'Avg Resale Price (SGD)',
-          data: prices,
-          borderColor: '#007bff',
-          backgroundColor: 'rgba(0, 123, 255, 0.1)',
-          fill: true,
-          tension: 0.1,
-        },
-      ],
+      labels: months,
+      datasets,
     };
-  }, [filteredData]);
+  }, [data?.avg_price_by_flat_type_by_month]);
+
+
 
   // Handlers
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -152,12 +169,12 @@ const Dashboard: React.FC = () => {
       <div className="filters">
         <label htmlFor="townFilter">Town:</label>
         <select id="townFilter" name="town" value={filters.town} onChange={handleFilterChange}>
-          <option value="">All Towns</option>
+          <option value="all">All Towns</option>
           {towns.map(town => <option key={town} value={town}>{town}</option>)}
         </select>
         <label htmlFor="flatTypeFilter">Flat Type:</label>
         <select id="flatTypeFilter" name="flatType" value={filters.flatType} onChange={handleFilterChange}>
-          <option value="">All Types</option>
+          <option value="all">All Types</option>
           {flatTypes.map(type => <option key={type} value={type}>{type}</option>)}
         </select>
         <label htmlFor="priceRange">Price Range (SGD):</label>
@@ -169,7 +186,6 @@ const Dashboard: React.FC = () => {
           max={maxSlider}
           value={filters.maxPrice}
           step={50000}
-          onChange={handleFilterChange}
         />
         <span id="priceValue">Up to ${filters.maxPrice.toLocaleString()}</span>
       </div>
@@ -249,7 +265,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Recent Transactions Table */}
-      <Box mt={4}>
+      {/* <Box mt={4}>
         <Typography variant="h5" gutterBottom>
           Recent Transactions (Latest 1000)
         </Typography>
@@ -291,7 +307,7 @@ const Dashboard: React.FC = () => {
             sx={{ fontSize: 14 }}
           />
         </div>
-      </Box>
+      </Box> */}
     </div>
   );
 };
