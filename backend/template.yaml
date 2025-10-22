@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Lambda API to process resale CSV data from S3
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.10
+    Architectures:
+      - x86_64
+
+Resources:
+  ResaleDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: fetch-data-api
+      Handler: app.lambda_handler
+      CodeUri: fetch_data/
+      Description: Processes resale house data from CSV stored in S3
+      Environment:
+        Variables:
+          BUCKET_NAME: resalehouse
+          CSV_KEY: full_data.csv
+      Policies:
+        - S3ReadPolicy:
+            BucketName: resalehouse
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /process
+            Method: get
+            RestApiId: !Ref ResaleApi
+
+  ResaleApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: fetch-data-api
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ResaleApi}.execute-api.${AWS::Region}.amazonaws.com/prod/process"
