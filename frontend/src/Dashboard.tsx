@@ -1,10 +1,18 @@
 import React, { useMemo, useState } from 'react';
-// import { DataGrid } from '@mui/x-data-grid';
-// import type { GridColDef } from '@mui/x-data-grid/models/colDef';
-// import { Box, Typography } from '@mui/material';
-// import { useResaleData } from './useResaleData';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
+import { useNavigate } from 'react-router-dom';
+import Typography from '@mui/material/Typography';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import {getResaleData} from './ResaleData';
+// import dotenv from 'dotenv';
+// dotenv.config();
 
 import {
   Chart as ChartJS,
@@ -18,45 +26,38 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { Grid } from '@mui/material';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
 interface Filters {
   town: string;
   flatType: string;
-  maxPrice: number;
 }
 
 const defaultFilters: Filters = {
   town: 'all',
-  flatType: 'all',
-  maxPrice: 2000000,
+  flatType: 'all'
 };
 
 const Dashboard: React.FC = () => {
-  // const { data, loading, error } = useResaleData();
-  // console.log('Data loaded:', data.length, 'records');
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<Filters>(defaultFilters);
 
-  const { data, loading, error } = getResaleData(filters.town, filters.flatType);
+  const handleChangeTown = (event: SelectChangeEvent) => {
+    // setTown(event.target.value);
+    setFilters(f => ({ ...f, town: event.target.value }));
+  };
+
+  const handleChangeFlatType = (event: SelectChangeEvent) => {
+    // setFlatType(event.target.value);
+    setFilters(f => ({ ...f, flatType: event.target.value }));
+  };
+  const apiId = import.meta.env.VITE_API_ID || '';
+  const { data} = getResaleData(filters.town, filters.flatType, apiId);
   // Compute filter options
   const towns = ["ANG MO KIO","BEDOK","BISHAN","BUKIT BATOK","BUKIT MERAH","BUKIT PANJANG","BUKIT TIMAH","CENTRAL AREA","CHOA CHU KANG","CLEMENTI","GEYLANG","HOUGANG","JURONG EAST","JURONG WEST","KALLANG/WHAMPOA","MARINE PARADE","PASIR RIS","PUNGGOL","QUEENSTOWN","SEMBAWANG","SENGKANG","SERANGOON","TAMPINES","TOA PAYOH","WOODLANDS","YISHUN"];
   const flatTypes = ['1 ROOM', '2 ROOM', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE', 'MULTI-GENERATION'];
-  // const maxSlider = useMemo(() => {
-  //   if (data?.total_sales === 0) return 2000000;
-  //   return Math.ceil(Math.max(...data.map(d => parseInt(d.resale_price))) / 50000) * 50000;
-  // }, [data]);
-  const maxSlider = 2000000;
-
-  // Filtered data
-  // const filteredData = useMemo(() =>
-  //   data.filter(row =>
-  //     (!filters.town || row.town === filters.town) &&
-  //     (!filters.flatType || row.flat_type === filters.flatType) &&
-  //     parseInt(row.resale_price) <= filters.maxPrice
-  //   ),
-  //   [data, filters]
-  // );
 
   // Chart data: Flat Type Distribution (Pie)
   const flatTypePie = useMemo(() => {
@@ -79,7 +80,6 @@ const Dashboard: React.FC = () => {
     ],
   };
 }, [data?.flat_type_distribution]);
-
 
   // Stats
   const totalSales = data?.total_sales || 0;
@@ -152,62 +152,131 @@ const Dashboard: React.FC = () => {
     };
   }, [data?.avg_price_by_flat_type_by_month]);
 
-
-
-  // Handlers
-  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFilters(f => ({ ...f, [name]: name === 'maxPrice' ? Number(value) : value }));
-  };
-
   return (
     <div>
-      <h1>HDB Resale Flat Prices Dashboard (2017 - Present)</h1>
-      <p>Interactive insights into Singapore's HDB resale market (~216K rows). Data from <a href="https://data.gov.sg/datasets/d_8b84c4ee58e3cfc0ece0d773c8ca6abc" target="_blank" rel="noopener noreferrer">data.gov.sg</a>.</p>
-      {loading && <div>Loading data...</div>}
-      {error && <div style={{color: 'red'}}>Error: {error}</div>}
+      <Button 
+        variant="contained"
+        onClick={() => navigate('/premium')}
+        sx={{ 
+          display: 'block',
+          marginLeft: 'auto',
+          marginRight: 0,
+          marginBottom: 2
+        }}
+      >
+        Premium Version
+      </Button>
+
+      <Typography 
+        component="h1" 
+        variant="h4" 
+        sx={{ 
+          textAlign: 'left',
+          marginBottom: 3,
+          fontWeight: 'bold'
+        }}
+      >
+        PropSights: SG Housing At A Glance
+      </Typography>
       <div className="filters">
-        <label htmlFor="townFilter">Town:</label>
-        <select id="townFilter" name="town" value={filters.town} onChange={handleFilterChange}>
-          <option value="all">All Towns</option>
-          {towns.map(town => <option key={town} value={town}>{town}</option>)}
-        </select>
-        <label htmlFor="flatTypeFilter">Flat Type:</label>
-        <select id="flatTypeFilter" name="flatType" value={filters.flatType} onChange={handleFilterChange}>
-          <option value="all">All Types</option>
-          {flatTypes.map(type => <option key={type} value={type}>{type}</option>)}
-        </select>
-        <label htmlFor="priceRange">Price Range (SGD):</label>
-        <input
-          type="range"
-          id="priceRange"
-          name="maxPrice"
-          min={0}
-          max={maxSlider}
-          value={filters.maxPrice}
-          step={50000}
-        />
-        <span id="priceValue">Up to ${filters.maxPrice.toLocaleString()}</span>
+        <Stack
+          direction="row"
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            width: '100%',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            justifyContent: 'space-between',
+            maxWidth: { sm: '100%', md: '1700px' },
+            pt: 1.5,
+          }}
+          spacing={2}
+        >
+          <Typography component="h1" variant="h6" sx={{ mb: 2 }}>
+            Query the Data
+          </Typography>
+          <Stack direction="row" sx={{ gap: 1, minWidth: 400 }}>
+            <FormControl fullWidth>
+              <InputLabel>Town</InputLabel>
+              <Select
+                value={filters.town}
+                onChange={handleChangeTown}
+                label="Town">
+                <MenuItem value='all'>ALL</MenuItem>
+                {towns.map(town => (
+                  <MenuItem value={town}>{town}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Flat Type</InputLabel>
+              <Select
+                value={filters.flatType}
+                onChange={handleChangeFlatType}
+                label="FlatType">
+                <MenuItem value='all'>ALL</MenuItem>
+                {flatTypes.map(type => (
+                  <MenuItem value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Stack>
+        <Grid
+          container
+          spacing={2}
+          columns={12}
+          sx={{ width: '100%', marginTop: 2 }}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card>
+                <CardContent>
+                  <Typography component="h2" variant="subtitle2">
+                    Total Sales
+                  </Typography>
+                  <Typography component="h3" variant="h4" sx={{ mt: 2, color: "#007bff" }}>
+                    {totalSales.toLocaleString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card>
+                <CardContent>
+                  <Typography component="h2" variant="subtitle2">
+                    Avg Price
+                  </Typography>
+                  <Typography component="h3" variant="h4" sx={{ mt: 2, color: "#007bff" }}>
+                    {avgPrice.toLocaleString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card>
+                <CardContent>
+                  <Typography component="h2" variant="subtitle2">
+                    Latest Month
+                  </Typography>
+                  <Typography component="h3" variant="h4" sx={{ mt: 2, color: "#007bff" }}>
+                    {latestMonth}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+              <Card>
+                <CardContent>
+                  <Typography component="h2" variant="subtitle2">
+                    Highest Price
+                  </Typography>
+                  <Typography component="h3" variant="h4" sx={{ mt: 2, color: "#007bff" }}>
+                    {maxPrice.toLocaleString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+        </Grid>
       </div>
-          // ...existing code...
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Total Sales</h3>
-          <p id="totalSales">{totalSales.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Avg Price</h3>
-          <p id="avgPrice">${avgPrice.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Latest Month</h3>
-          <p id="latestMonth">{latestMonth}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Highest Price</h3>
-          <p id="maxPrice">${maxPrice.toLocaleString()}</p>
-        </div>
-      </div>
+
       {/* Chart: Average Resale Price Over Time */}
       <div className="chart-container" style={{ marginTop: 32 }}>
         <h2>Average Resale Price Over Time</h2>
@@ -263,51 +332,6 @@ const Dashboard: React.FC = () => {
           },
         }} />
       </div>
-
-      {/* Recent Transactions Table */}
-      {/* <Box mt={4}>
-        <Typography variant="h5" gutterBottom>
-          Recent Transactions (Latest 1000)
-        </Typography>
-        <div style={{ height: 600, width: '100%', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #0001' }}>
-          <DataGrid
-            rows={useMemo(() => {
-              return filteredData
-                .slice()
-                .sort((a, b) => {
-                  if (a.month !== b.month) return b.month.localeCompare(a.month);
-                  // Ensure resale_price is a number for sorting
-                  return parseInt(b.resale_price) - parseInt(a.resale_price);
-                })
-                .slice(0, 1000)
-                .map((row, idx) => ({
-                  ...row,
-                  id: idx + 1,
-                  resale_price: parseInt(row.resale_price),
-                  floor_area_sqm: parseFloat(row.floor_area_sqm),
-                }));
-            }, [filteredData])}
-            columns={[
-              { field: 'id', headerName: 'ID', width: 70, hide: true },
-              { field: 'month', headerName: 'Month', width: 110 },
-              { field: 'town', headerName: 'Town', width: 130 },
-              { field: 'flat_type', headerName: 'Flat Type', width: 120 },
-              { field: 'block', headerName: 'Block', width: 90 },
-              { field: 'street_name', headerName: 'Street', width: 160 },
-              { field: 'storey_range', headerName: 'Storey Range', width: 120 },
-              { field: 'floor_area_sqm', headerName: 'Floor Area (sqm)', width: 140, type: 'number' },
-              { field: 'resale_price', headerName: 'Resale Price (SGD)', width: 160, type: 'number',
-                valueFormatter: (params: any) => params.value?.toLocaleString('en-SG', { style: 'currency', currency: 'SGD', maximumFractionDigits: 0 })
-              },
-            ] as GridColDef[]}
-            paginationModel={{ pageSize: 20, page: 0 }}
-            pageSizeOptions={[20, 50, 100]}
-            disableRowSelectionOnClick
-            getRowId={(row) => row.id}
-            sx={{ fontSize: 14 }}
-          />
-        </div>
-      </Box> */}
     </div>
   );
 };
