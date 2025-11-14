@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: XGBoost Lambda for HDB resale price prediction (Docker image)
+
+Resources:
+  XGBoostInferenceFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+        DockerTag: python3.10
+        DockerContext: ./resale_predict
+        Dockerfile: Dockerfile
+    Properties:
+      PackageType: Image
+      MemorySize: 1024
+      Timeout: 30
+      Events:
+        PredictGet:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: get
+        PredictPost:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: post
+        PredictOptions:
+          Type: Api
+          Properties:
+            Path: /predict
+            Method: options
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

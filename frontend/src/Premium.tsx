@@ -17,8 +17,10 @@ import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import TextField from '@mui/material/TextField';
+import Alert from '@mui/material/Alert';
 import { Line, Bar, Pie } from 'react-chartjs-2';
-import {getResaleData, getStats} from './ResaleData';
+import {getResaleData, getStats, fetchPrediction} from './ResaleData';
 // import dotenv from 'dotenv';
 // dotenv.config();
 
@@ -44,6 +46,28 @@ interface Filters {
   insightType: string;
 }
 
+interface predict_query{
+  flat_type: string;
+  storey_range: string;
+  remaining_lease_numeric: number;
+  floor_area_sqm: number;
+  flat_model: string;
+  town: string;
+}
+
+interface PredictionResponse {
+  data: number[]; // preds.tolist() returns an array of numbers
+}
+
+const defaultPredict: predict_query = {
+  flat_type: "1 ROOM",
+  storey_range: "01 TO 03",
+  remaining_lease_numeric: 0,
+  floor_area_sqm: 0,
+  flat_model: "Standard",
+  town: "ANG MO KIO"
+};
+
 const defaultFilters: Filters = {
   town: 'all',
   flatType: 'all',
@@ -68,12 +92,78 @@ const Premium: React.FC = () => {
     // setInsightType(event.target.value);
     setFilters(f => ({ ...f, insightType: event.target.value }));
   }
-  const apiId = import.meta.env.VITE_API_ID || '';
-  const { data} = getResaleData(filters.town, filters.flatType, apiId);
+
+  const [query, setQuery] = useState<predict_query>(defaultPredict);
+  const [isPredicting, setIsPredicting] = useState(false);
+
+  const handleChangeQuery = (field: keyof predict_query) => (event: any) => {
+    setQuery(prev => ({
+      ...prev,
+      [field]: event.target.value
+    }));
+  };
+
+  const handleNumberInput = (field: 'remaining_lease_numeric' | 'floor_area_sqm') => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const value = event.target.value;
+  const numValue = parseFloat(value);
+  
+  if (value === '' || (numValue > 0)) {
+    let finalValue = value === '' ? 0 : numValue;
+    
+    // Add validation for remaining_lease_numeric
+    if (field === 'remaining_lease_numeric' && numValue > 99) {
+      finalValue = 99; // Cap at 99 years
+    }
+    
+    setQuery(prev => ({
+      ...prev,
+      [field]: finalValue
+    }));
+  }
+};
+
+  const [predictionData, setPredictionData] = useState<PredictionResponse | null>(null);
+  // const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handlePredict = async () => {
+    if (!isFormValid) return;
+    
+    // setLoading(true);
+    setError(null);
+    setIsPredicting(true);
+    
+    try {
+      const result = await fetchPrediction(query);
+      setPredictionData(result);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      // setLoading(false);
+      setIsPredicting(false);
+    }
+  };
+
+  // if (isPredicting && !loading && (data || error)) {
+  //   setIsPredicting(false);
+  // }
+
+  // const isFormValid = query.flat_type && query.storey_range && query.flat_model && 
+  //                    query.town && query.remaining_lease_numeric > 0 && query.floor_area_sqm > 0;
+  const { data} = getResaleData(filters.town, filters.flatType);
   const { stats} = getStats();
+
+  // if (isPredicting && !loading && (predictionData || error)) {
+  //   setIsPredicting(false);
+  // }
+
+  const isFormValid = query.flat_type && query.storey_range && query.flat_model && 
+                     query.town && query.remaining_lease_numeric > 0 && query.floor_area_sqm > 0;
   // Compute filter options
   const towns = ["ANG MO KIO","BEDOK","BISHAN","BUKIT BATOK","BUKIT MERAH","BUKIT PANJANG","BUKIT TIMAH","CENTRAL AREA","CHOA CHU KANG","CLEMENTI","GEYLANG","HOUGANG","JURONG EAST","JURONG WEST","KALLANG/WHAMPOA","MARINE PARADE","PASIR RIS","PUNGGOL","QUEENSTOWN","SEMBAWANG","SENGKANG","SERANGOON","TAMPINES","TOA PAYOH","WOODLANDS","YISHUN"];
   const flatTypes = ['1 ROOM', '2 ROOM', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE', 'MULTI-GENERATION'];
+  const storey_ranges = ['01 TO 03', '04 TO 06', '07 TO 09', '10 TO 12', '13 TO 15', '16 TO 18', '19 TO 21', '22 TO 24', '25 TO 27', '28 TO 30', '31 TO 33', '34 TO 36', '37 TO 39', '40 TO 42', '43 TO 45', '46 TO 48', '49 TO 51'];
+  const flat_models = ['Improved', 'New Generation', 'DBSS', 'Standard', 'Apartment', 'Simplified', 'Model A', 'Premium Apartment', 'Adjoined flat', 'Model A-Maisonette', 'Maisonette', 'Type S1', 'Type S2', 'Model A2', 'Terrace', 'Improved-Maisonette', 'Premium Maisonette', 'Multi Generation', 'Premium Apartment Loft', '2-room', '3Gen'];
   const insight_types = ['Town', 'Flat Model', 'Storey Range', 'Remaining Years', 'Transaction / Year', 'Price per sqm (Violin)', 'Correlation Matrix']
   
     // Map insight types to environment variables
@@ -181,6 +271,30 @@ const Premium: React.FC = () => {
       datasets,
     };
   }, [data?.avg_price_by_flat_type_by_month]);
+
+  const predictionChartData = useMemo(() => {
+    if (!predictionData?.data || predictionData.data.length === 0) return { labels: [], datasets: [] };
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: predictionData.data.length }, (_, i) => 
+      (currentYear + i).toString()
+    );
+
+    const dataset = {
+      label: 'Predicted Price',
+      data: predictionData.data.map(price => Math.round(price)),
+      borderColor: '#007bff',
+      backgroundColor: '#007bff33',
+      borderWidth: 3,
+      tension: 0.1,
+      fill: false,
+    };
+
+    return {
+      labels: years,
+      datasets: [dataset],
+    };
+  }, [predictionData]);
 
   return (
     <div>
@@ -466,7 +580,178 @@ const Premium: React.FC = () => {
           },
         }} />
       </div>
-    </div>
+
+      <div className="filters" style={{ marginTop: 32 }}>
+        <Stack spacing={3} sx={{ mt: 4, mb: 3 }}>
+          {/* Heading - now inside the Stack and at the top */}
+          <Typography 
+            variant="h4" 
+            component="h2" 
+            align="center" 
+            sx={{ 
+              mb: 2
+            }}
+          >
+            HDB Price Forecast
+          </Typography>
+
+          {/* First row: Dropdowns only */}
+          <Stack 
+            direction="row"
+            spacing={3}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+              gap: 3
+            }}
+          >
+            {/* Town Dropdown */}
+            <FormControl fullWidth>
+              <InputLabel>Town</InputLabel>
+              <Select
+                value={query.town}
+                onChange={handleChangeQuery('town')}
+                label="Town"
+              >
+                {towns.map(town => (
+                  <MenuItem key={town} value={town}>{town}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Flat Type Dropdown */}
+            <FormControl fullWidth>
+              <InputLabel>Flat Type</InputLabel>
+              <Select
+                value={query.flat_type}
+                onChange={handleChangeQuery('flat_type')}
+                label="Flat Type"
+              >
+                {flatTypes.map(type => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Storey Range Dropdown */}
+            <FormControl fullWidth>
+              <InputLabel>Storey Range</InputLabel>
+              <Select
+                value={query.storey_range}
+                onChange={handleChangeQuery('storey_range')}
+                label="Storey Range"
+              >
+                {storey_ranges.map(range => (
+                  <MenuItem key={range} value={range}>{range}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Flat Model Dropdown */}
+            <FormControl fullWidth>
+              <InputLabel>Flat Model</InputLabel>
+              <Select
+                value={query.flat_model}
+                onChange={handleChangeQuery('flat_model')}
+                label="Flat Model"
+              >
+                {flat_models.map(model => (
+                  <MenuItem key={model} value={model}>{model}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+
+          {/* Second row: Number inputs and button */}
+          <Stack 
+            direction="row"
+            spacing={3}
+            alignItems="flex-end"
+          >
+            {/* Remaining Lease (Number Input) */}
+            <TextField
+              fullWidth
+              label="Remaining Lease (years)"
+              type="number"
+              inputProps={{ min: "1", step: "1" }}
+              value={query.remaining_lease_numeric || ''}
+              onChange={handleNumberInput('remaining_lease_numeric')}
+              placeholder="Enter years"
+            />
+
+            {/* Floor Area (Number Input) */}
+            <TextField
+              fullWidth
+              label="Floor Area (sqm)"
+              type="number"
+              inputProps={{ min: "1", step: "0.1" }}
+              value={query.floor_area_sqm || ''}
+              onChange={handleNumberInput('floor_area_sqm')}
+              placeholder="Enter square meters"
+            />
+
+            {/* Predict Button */}
+            <Button
+              variant="contained"
+              onClick={handlePredict}
+              disabled={!isFormValid || isPredicting}
+              size="large"
+              sx={{
+                py: 1.5,
+                px: 4,
+                fontSize: '16px',
+                fontWeight: 'bold',
+                minWidth: '140px'
+              }}
+            >
+              {isPredicting ? 'Predicting...' : 'Predict Price'}
+            </Button>
+          </Stack>
+        </Stack>
+      </div>
+
+      {/* Error and Chart placed outside in separate container */}
+      <div className="chart-container">
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {predictionData?.data && (
+          <div style={{ marginTop: 32 }}>
+            <h2>Price Prediction Over Next 5 Years</h2>
+            <Line 
+              data={predictionChartData} 
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { display: true },
+                },
+                scales: {
+                  y: {
+                    ticks: {
+                      callback: (tickValue: string | number) => {
+                        const n = typeof tickValue === 'number' ? tickValue : parseInt(tickValue);
+                        return `$${n.toLocaleString()}`;
+                      },
+                    },
+                  },
+                  x: {
+                    title: {
+                      display: true,
+                      text: 'Year'
+                    }
+                  }
+                },
+              }} 
+            />
+          </div>
+        )}
+      </div>
+
+      </div>
+    
   );
 };
 

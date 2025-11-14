@@ -1,14 +1,14 @@
 # lambda_function.py
 import json
-import pandas as pd
 import boto3
-from io import StringIO
+import polars as pl
+from io import BytesIO
 
 # Hardcoded S3 info
-BUCKET_NAME = "resalehouse"
-CSV_KEY = "full_data.csv"  # adjust if it’s in a folder inside S3
+BUCKET_NAME = "kh-propsight-data"
+PARQUET_KEY = "clean/clean.parquet"
 
-s3 = boto3.client('s3')
+s3 = boto3.client("s3")
 
 def lambda_handler(event, context):
     # Get query parameters
@@ -16,10 +16,25 @@ def lambda_handler(event, context):
     town = params.get("town", "all")
     flat_type = params.get("flat_type", "all")
 
-    # Load CSV from S3
+    schema = {
+        "month": pl.Utf8,
+        "town": pl.Utf8,
+        "flat_type": pl.Utf8,
+        "block": pl.Utf8,
+        "street_name": pl.Utf8,
+        "storey_range": pl.Utf8,
+        "floor_area_sqm": pl.Float64,
+        "flat_model": pl.Utf8,
+        "lease_commence_date": pl.Int64,
+        "remaining_lease": pl.Utf8,
+        "resale_price": pl.Float64
+    }
+
+    # Load Parquet from S3
     try:
-        obj = s3.get_object(Bucket=BUCKET_NAME, Key=CSV_KEY)
-        df = pd.read_csv(obj["Body"])
+        obj = s3.get_object(Bucket=BUCKET_NAME, Key=PARQUET_KEY)
+        data = obj["Body"].read()
+        df = pl.read_parquet(BytesIO(data), schema=schema)
     except Exception as e:
         return {
             "statusCode": 500,
@@ -27,46 +42,57 @@ def lambda_handler(event, context):
         }
 
     # Filter
-    filtered_df = df.copy()
     if town != "all":
-        filtered_df = filtered_df[filtered_df["town"] == town]
+        df = df.filter(pl.col("town") == town)
     if flat_type != "all":
-        filtered_df = filtered_df[filtered_df["flat_type"] == flat_type]
+        df = df.filter(pl.col("flat_type") == flat_type)
 
-    if filtered_df.empty:
+    if df.height == 0:
         return {
             "statusCode": 404,
             "body": json.dumps({"error": "No data found for given filters"})
         }
+    
+    # df = df.with_columns([
+    #     pl.col("floor_area_sqm").round(1),
+    #     pl.col("resale_price").round(1)
+    # ])
 
     # Basic metrics
-    total_sales = filtered_df.shape[0]
-    avg_price = filtered_df["resale_price"].mean()
-    latest_month = filtered_df["month"].max()
-    max_price = filtered_df["resale_price"].max()
+    total_sales = df.height
+    avg_price = df["resale_price"].mean()
+    latest_month = df["month"].max()
+    max_price = df["resale_price"].max()
 
     # Aggregations
     avg_price_by_flat_type_by_month_df = (
-        filtered_df.groupby(["flat_type", "month"])["resale_price"].mean().reset_index()
+        df.group_by(["flat_type", "month"])
+        .agg(pl.col("resale_price").mean().alias("avg_price").round(1))
+        .pivot(index="flat_type", columns="month", values="avg_price")
+        .fill_null(-1)
     )
-    avg_price_by_flat_type_by_month = (
-        avg_price_by_flat_type_by_month_df
-        .pivot_table(index="flat_type", columns="month", values="resale_price")
-        .fillna(-1)
-        .to_dict(orient="index")
-    )
+    avg_price_by_flat_type_by_month = {
+        row['flat_type']: {k: v for k, v in row.items() if k != 'flat_type'}
+        for row in avg_price_by_flat_type_by_month_df.to_dicts()
+    }
 
     avg_price_by_flat_type_by_town_df = (
-        filtered_df.groupby(["flat_type", "town"])["resale_price"].mean().reset_index()
+        df.group_by(["flat_type", "town"])
+        .agg(pl.col("resale_price").mean().alias("avg_price").round(1))
+        .pivot(index="town", columns="flat_type", values="avg_price")
+        .fill_null(0)
     )
-    avg_price_by_flat_type_by_town = (
-        avg_price_by_flat_type_by_town_df
-        .pivot_table(index="town", columns="flat_type", values="resale_price")
-        .fillna(0)
-        .to_dict(orient="index")
+    avg_price_by_flat_type_by_town = {
+        row['town']: {k: v for k, v in row.items() if k != 'town'}
+        for row in avg_price_by_flat_type_by_town_df.to_dicts()
+    }
+
+    count_by_flat_type_df = (
+        df.group_by("flat_type")
+          .agg(pl.count("resale_price").alias("count"))
     )
 
-    count_by_flat_type = filtered_df.groupby(["flat_type"])["resale_price"].count().to_dict()
+    count_by_flat_type = {row['flat_type']: row['count'] for row in count_by_flat_type_df.to_dicts()}
 
     result = {
         "total_sales": total_sales,
@@ -83,7 +109,7 @@ def lambda_handler(event, context):
         "headers": {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type"
+            "Access-Control-Allow-Headers": "Content-Type",
         },
         "body": json.dumps(result)
     }

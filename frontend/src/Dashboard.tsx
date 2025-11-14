@@ -53,8 +53,7 @@ const Dashboard: React.FC = () => {
     // setFlatType(event.target.value);
     setFilters(f => ({ ...f, flatType: event.target.value }));
   };
-  const apiId = import.meta.env.VITE_API_ID || '';
-  const { data} = getResaleData(filters.town, filters.flatType, apiId);
+  const { data} = getResaleData(filters.town, filters.flatType);
   // Compute filter options
   const towns = ["ANG MO KIO","BEDOK","BISHAN","BUKIT BATOK","BUKIT MERAH","BUKIT PANJANG","BUKIT TIMAH","CENTRAL AREA","CHOA CHU KANG","CLEMENTI","GEYLANG","HOUGANG","JURONG EAST","JURONG WEST","KALLANG/WHAMPOA","MARINE PARADE","PASIR RIS","PUNGGOL","QUEENSTOWN","SEMBAWANG","SENGKANG","SERANGOON","TAMPINES","TOA PAYOH","WOODLANDS","YISHUN"];
   const flatTypes = ['1 ROOM', '2 ROOM', '3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE', 'MULTI-GENERATION'];

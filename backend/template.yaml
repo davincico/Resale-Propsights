@@ -5,26 +5,36 @@ Description: Lambda API to process resale CSV data from S3
 Globals:
   Function:
     Timeout: 30
-    MemorySize: 512
+    MemorySize: 1024
     Runtime: python3.10
     Architectures:
       - x86_64
 
 Resources:
+  ResaleApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: fetch-data-polars-api-v2
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+  
   ResaleDataFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: fetch-data-api
+      FunctionName: fetch-data-polars-api-v2
       Handler: app.lambda_handler
       CodeUri: fetch_data/
       Description: Processes resale house data from CSV stored in S3
       Environment:
         Variables:
-          BUCKET_NAME: resalehouse
-          CSV_KEY: full_data.csv
+          BUCKET_NAME: kh-propsight-data
+          PARQUET_KEY: clean/clean.parquet
       Policies:
         - S3ReadPolicy:
-            BucketName: resalehouse
+            BucketName: kh-propsight-data
       Events:
         ApiEvent:
           Type: Api
@@ -32,16 +42,6 @@ Resources:
             Path: /process
             Method: get
             RestApiId: !Ref ResaleApi
-
-  ResaleApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: fetch-data-api
-      StageName: prod
-      Cors:
-        AllowMethods: "'GET,OPTIONS'"
-        AllowHeaders: "'Content-Type'"
-        AllowOrigin: "'*'"
 
 Outputs:
   ApiUrl:

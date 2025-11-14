@@ -1,5 +1,18 @@
 import { useEffect, useState } from "react";
 
+interface PredictionParams {
+  flat_type: string;
+  storey_range: string;
+  remaining_lease_numeric: number;
+  floor_area_sqm: number;
+  flat_model: string;
+  town: string;
+}
+
+interface PredictionResponse {
+  data: number[]; // preds.tolist() returns an array of numbers
+}
+
 export interface ResaleData {
   total_sales: number;
   average_price: number;
@@ -25,20 +38,19 @@ export interface EDASummary {
 }
 
 
-export interface ApiResponse {
-  "status code": number;
-  data: ResaleData;
-}
+// export interface ApiResponse {
+//   "status code": number;
+//   data: ResaleData;
+// }
 
 // --- plain fetch function ---
 async function fetchResaleData(
   town: string,
-  flat_type: string,
-  apiId: string
+  flat_type: string
 ): Promise<ResaleData> {
 
   console.log("Fetching resale data for", town, flat_type);
-  const url = `https://${apiId}.execute-api.ap-southeast-1.amazonaws.com/Stage/process?town=${encodeURIComponent(
+  const url = `https://${import.meta.env.VITE_API_ID}.execute-api.ap-southeast-1.amazonaws.com/Stage/process?town=${encodeURIComponent(
   town
   )}&flat_type=${encodeURIComponent(flat_type)}`;
 
@@ -53,7 +65,7 @@ async function fetchResaleData(
 }
 
 // --- React hook version (self-contained state + effect) ---
-export function getResaleData(town: string, flat_type: string, apiId: string) {
+export function getResaleData(town: string, flat_type: string) {
   const [data, setData] = useState<ResaleData | null>(null);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState<string | null>(null);
@@ -64,7 +76,7 @@ export function getResaleData(town: string, flat_type: string, apiId: string) {
     const load = async () => {
       try {
         // setLoading(true);
-        const resaleData = await fetchResaleData(town, flat_type, apiId);
+        const resaleData = await fetchResaleData(town, flat_type);
         if (isMounted) {
           setData(resaleData);
         }
@@ -111,4 +123,76 @@ export function getStats(){
     };
   }, []);
   return { stats};
+}
+
+export async function fetchPrediction(
+  params: PredictionParams
+): Promise<PredictionResponse> {
+  console.log("Fetching prediction for", params);
+  
+  const url = `https://${import.meta.env.VITE_PREDICT_API_ID}.execute-api.ap-southeast-1.amazonaws.com/Prod/predict`;
+  
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params)
+  });
+  
+  if (!res.ok) {
+    throw new Error(`Failed to fetch prediction: ${res.status}`);
+  }
+  
+  console.log("Prediction response received");
+  const result = await res.json();
+  
+  // The response has a `data` field containing the predictions array
+  return result;
+}
+
+export function getPrediction(
+  params: PredictionParams,
+  trigger: number
+) {
+  const [predictionData, setData] = useState<PredictionResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  console.log("getPrediction called with params:", params, "trigger:", trigger);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const predictionData = await fetchPrediction(params);
+        if (isMounted) {
+          setData(predictionData);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Failed to fetch prediction:", err);
+          setError(err.message);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Only fetch if all required parameters are provided
+    if (params.town && params.flat_type && params.flat_model) {
+      load();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [params, trigger]);
+
+  return { predictionData, loading, error };
 }
