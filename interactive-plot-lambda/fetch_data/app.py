@@ -3,12 +3,13 @@ import json
 import boto3
 import polars as pl
 from io import BytesIO
+import os
+import s3fs
 
-# Hardcoded S3 info
-BUCKET_NAME = "kh-propsight-data"
-PARQUET_KEY = "clean/clean.parquet"
+BUCKET_NAME = os.environ['BUCKET_NAME']
+PARQUET_PATH = f"s3://{BUCKET_NAME}/{os.environ['PARQUET_PATH']}"
 
-s3 = boto3.client("s3")
+fs = s3fs.S3FileSystem()
 
 def lambda_handler(event, context):
     # Get query parameters
@@ -16,25 +17,25 @@ def lambda_handler(event, context):
     town = params.get("town", "all")
     flat_type = params.get("flat_type", "all")
 
-    schema = {
-        "month": pl.Utf8,
-        "town": pl.Utf8,
-        "flat_type": pl.Utf8,
-        "block": pl.Utf8,
-        "street_name": pl.Utf8,
-        "storey_range": pl.Utf8,
-        "floor_area_sqm": pl.Float64,
-        "flat_model": pl.Utf8,
-        "lease_commence_date": pl.Int64,
-        "remaining_lease": pl.Utf8,
-        "resale_price": pl.Float64
-    }
 
     # Load Parquet from S3
     try:
-        obj = s3.get_object(Bucket=BUCKET_NAME, Key=PARQUET_KEY)
-        data = obj["Body"].read()
-        df = pl.read_parquet(BytesIO(data), schema=schema)
+        paths = fs.glob(PARQUET_PATH+"*.parquet")
+
+        if not paths:
+            return {
+                "statusCode": 404,
+                "body": json.dumps({"error": "No parquet files found"})
+            }
+
+        # Load all parquet files into Polars (fast)
+        dfs = []
+        for f in paths:
+            with fs.open(f, "rb") as f_obj:
+                data = f_obj.read()
+                dfs.append(pl.read_parquet(BytesIO(data)))
+
+        df = pl.concat(dfs)
     except Exception as e:
         return {
             "statusCode": 500,
@@ -52,6 +53,12 @@ def lambda_handler(event, context):
             "statusCode": 404,
             "body": json.dumps({"error": "No data found for given filters"})
         }
+    
+    # cast floor_area_sqm and resale_price to float32
+    df = df.with_columns([
+        pl.col("floor_area_sqm").cast(pl.Float32),
+        pl.col("resale_price").cast(pl.Float32)
+    ])
     
     # df = df.with_columns([
     #     pl.col("floor_area_sqm").round(1),

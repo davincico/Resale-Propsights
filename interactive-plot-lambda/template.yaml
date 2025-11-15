@@ -30,11 +30,11 @@ Resources:
       Description: Processes resale house data from CSV stored in S3
       Environment:
         Variables:
-          BUCKET_NAME: kh-propsight-data
-          PARQUET_KEY: clean/clean.parquet
+          BUCKET_NAME: www.propsights.site
+          PARQUET_PATH: cleaned/clean.parquet/  # Note: trailing slash for directory
       Policies:
         - S3ReadPolicy:
-            BucketName: kh-propsight-data
+            BucketName: www.propsights.site
       Events:
         ApiEvent:
           Type: Api
