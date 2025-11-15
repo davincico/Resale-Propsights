@@ -1,29 +1,9 @@
 # Resale-Propsights
 ---
-AWS Hosted Web app for Realtors, Real estate buyers and sellers - Making housing price data transparent and actionable
-test
+AWS Hosted Web app for Realtors, Real estate buyers and sellers - Making housing price data transparent and actionable.
+
 ### Overview
 HDB flats constitute the majority of Singapore’s housing stock, and the resale market plays a crucial role in shaping affordability, property investment decisions, and housing policies. Recognizing the public’s strong interest in HDB market analytics, we present PropSight - The HDB Lens, a cloud-based Software-as-a-Service (SaaS) platform designed to analyze HDB resale prices.
-
-## Intro
----
-We will be using this repo as staging area for our test web app files and other notes.
-
-One of the simplest sample I found was for React App on S3, we can try to model after this for minimal viable product before adding other features:
-https://github.com/qnlzgl/CS5224-PIA?tab=readme-ov-file
-
-### Architecture
-\<insert architecture diagram>
-
-
-List of resources:
-- React Web App
-- S3
-- Cloudfront
-- Lambda
-- Amazon Route 53
-
-Cloudfront allows cacheing, improves performance, allows HTTPs
 
 ### Group Members
 - Amos Kwok Chun Fung
@@ -32,20 +12,48 @@ Cloudfront allows cacheing, improves performance, allows HTTPs
 - Teo Pei Sheng Nicholas
 - Yew Jing Hui
 
-### Working with the Branches
-Main branch is for the finalized code deployment.
+## Intro
+---
+In the current Singaporean public housing market, access to clear and synthesized resale flats’ pricing data may be difficult. This "information gap" can manifest as challenges for resale buyers and realtors. 
 
-Development branch for each member, you can upload all your testing files and code to your branch:
-- davin_dev
-- jinghui_dev
-- karhwee_dev
-- nicholas_dev
-- amos_dev
+The application is hosted on S3 bucket static hosting for speed and cost, while an API Gateway and Lambda pair exposes lightweight JSON aggregates so the user can filter by town, price range, month and remaining lease. There are two versions of the app: free and premium.
+
+Free version:
+![alt text](image-1.png)
+
+Premium version:
+![alt text](image-2.png)
+
+Price forecast using custom proprietary algorithms:
+![alt text](image-3.png)
+
+### AWS Architecture
+![alt text](image.png)
+
+List of resources:
+- React Web App
+- API Gateways
+- S3
+- Cloudfront
+- Lambda & Event Bridge
+- Glue for ETL
 
 
-We will review the code and perform integration weekly.
+Cloudfront distribution with custom SSL certificate for HTTPS enforcement:
+![alt text](image-4.png)
 
+AWS Certificate Manager custom SSL certificate with dedicated CNAME records:
+![alt text](image-5.png)
 
+To utilize a professional domain for our business, we purchased a custom domain from namecheap. CNAME records for propsights.site are configured to point towards the AWS Cloudfront Distribution:
+![alt text](image-6.png)
+
+Using two S3 buckets:
+1. Static hosting the site files (www.propsights.site)
+![alt text](image-7.png)
+
+2. Second S3 Bucket (propsights.site) serves as Redirector 
+![alt text](image-8.png)
 
 #### 1. Preparing your branch
 Preparing to work on your branch:
@@ -67,7 +75,7 @@ git branch
 ```
 
 #### 2. Pushing to the repository 
-3 steps have to be performed to push changes to github:
+
 ```python
 git add .
 git commit -m "update the xxx file to include yyy"
