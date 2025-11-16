@@ -1,0 +1,10 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "resale-predict"
+resolve_s3 = true
+s3_prefix = "resale-predict"
+region = "ap-southeast-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = ["XGBoostInferenceFunction=133124153993.dkr.ecr.ap-southeast-1.amazonaws.com/resalepredictbd4b70a8/xgboostinferencefunction8eed4b10repo"]

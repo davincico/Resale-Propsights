@@ -19,16 +19,16 @@ In the current Singaporean public housing market, access to clear and synthesize
 The application is hosted on S3 bucket static hosting for speed and cost, while an API Gateway and Lambda pair exposes lightweight JSON aggregates so the user can filter by town, price range, month and remaining lease. There are two versions of the app: free and premium.
 
 Free version:
-![alt text](image-1.png)
+![alt text](images/image-1.png)
 
 Premium version:
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 
 Price forecast using custom proprietary algorithms:
-![alt text](image-3.png)
+![alt text](images/image-3.png)
 
 ### AWS Architecture
-![alt text](image.png)
+![alt text](images/image.png)
 
 List of resources:
 - React Web App
@@ -40,20 +40,19 @@ List of resources:
 
 
 Cloudfront distribution with custom SSL certificate for HTTPS enforcement:
-![alt text](image-4.png)
+![alt text](images/image-4.png)
 
 AWS Certificate Manager custom SSL certificate with dedicated CNAME records:
-![alt text](image-5.png)
+![alt text](images/image-5.png)
 
 To utilize a professional domain for our business, we purchased a custom domain from namecheap. CNAME records for propsights.site are configured to point towards the AWS Cloudfront Distribution:
-![alt text](image-6.png)
+![alt text](images/image-6.png)
 
 Using two S3 buckets:
 1. Static hosting the site files (www.propsights.site)
-![alt text](image-7.png)
-
+![alt text](images/image-7.png)
 2. Second S3 Bucket (propsights.site) serves as Redirector 
-![alt text](image-8.png)
+![alt text](images/image-8.png)
 
 #### 1. Preparing your branch
 Preparing to work on your branch:
@@ -83,4 +82,8 @@ git push origin <your_branch_name> # Example - git push origin davin_dev
 # What this does is it pushes your local code changes on your computer to Github online on YOUR BRANCH
 
 ```
+
+### Code Structure
+---
+
 
