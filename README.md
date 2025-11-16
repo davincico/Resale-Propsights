@@ -85,5 +85,83 @@ git push origin <your_branch_name> # Example - git push origin davin_dev
 
 ### Code Structure
 ---
+This section describes the structure of the codebase for the Resale Propsights application.
+
+#### frontend/
+This folder contains the frontend code for the Resale Propsights application. It is a Vite + React project that provides an interactive user interface with free and premium features for users to explore resale property data and make predictions.
+
+#### lambda-backend/
+This folder contains folder for compiling lambda functions which serve the backend of our application. 
+There are four subfolders: predict-lambda, interactive-plot-lambda, charts-lambda and data-fetch-lambda
+
+##### predict-lambda/
+This folder contains files for compiling a lambda function which serves the prediction API for the frontend application.
+Structure:
+```
+predict-lambda/
+├── samconfig.toml
+├── template.yaml
+└── predict/
+    ├── app.py
+    ├── requirements.txt
+    ├── dockerfile
+    ├── xgb_model.json
+    └── categorical_info.json
+```
+
+- `samconfig.toml` - Configuration file for AWS SAM CLI.
+- `template.yaml` - AWS SAM template defining the Lambda function and its properties.
+- `predict/app.py` - Python code for the Lambda function that handles prediction requests.
+- `predict/requirements.txt` - List of Python dependencies required by the Lambda function.
+- `predict/dockerfile` - Dockerfile for building the Lambda function container image on AWS ECR.
+- `predict/xgb_model.json` - Pre-trained XGBoost model used for making predictions.
+- `predict/categorical_info.json` - JSON file containing categorical feature mappings used in the model.
+
+##### interactive-plot-lambda/
+This folder contains files for compiling a lambda function which takes user query and compute housing statistics on demand
+Structure:
+```
+interactive-plot-lambda/
+├── samconfig.toml
+├── template.yaml
+└── fetch_data/
+    ├── app.py
+    └── requirements.txt
+```
+
+- `samconfig.toml` - Configuration file for AWS SAM CLI.
+- `template.yaml` - AWS SAM template defining the Lambda function and its properties.
+- `fetch_data/app.py` - Python code for the Lambda function that processes user queries and computes housing statistics.
+- `fetch_data/requirements.txt` - List of Python dependencies required by the Lambda function
+
+#### charts-lambda/
+This folder contains files for compiling a lambda function which generates insight charts periodically after data cleaning.
+Structure:
+```
+charts-lambda/
+├── Dockerfile
+├── handler.py
+└── requirements.txt
+```
+
+- `Dockerfile` - Dockerfile for building the Lambda function container image on AWS ECR.
+- `handler.py` - Python code for the Lambda function that generates insight charts.
+- `requirements.txt` - List of Python dependencies required by the Lambda function.
+
+#### data-fetch-lambda/
+This folder contains files for compiling a lambda function which fetches new data from data.gov.sg periodically
+Structure:
+```
+data-fetch-lambda/
+├── handler.py
+└── requirements.txt
+```
+- `handler.py` - Python code for the Lambda function that fetches new data from data.gov.sg.
+- `requirements.txt` - List of Python dependencies required by the Lambda function.
+
+### glue/
+This folder contains AWS Glue ETL job scripts for data processing and transformation.
+
+- `GlueETL.py` - Python script for the AWS Glue ETL job that processes and transforms the raw resale property data.
 
 
