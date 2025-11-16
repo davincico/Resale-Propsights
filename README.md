@@ -134,7 +134,7 @@ interactive-plot-lambda/
 - `fetch_data/app.py` - Python code for the Lambda function that processes user queries and computes housing statistics.
 - `fetch_data/requirements.txt` - List of Python dependencies required by the Lambda function
 
-#### charts-lambda/
+##### charts-lambda/
 This folder contains files for compiling a lambda function which generates insight charts periodically after data cleaning.
 Structure:
 ```
@@ -148,7 +148,7 @@ charts-lambda/
 - `handler.py` - Python code for the Lambda function that generates insight charts.
 - `requirements.txt` - List of Python dependencies required by the Lambda function.
 
-#### data-fetch-lambda/
+##### data-fetch-lambda/
 This folder contains files for compiling a lambda function which fetches new data from data.gov.sg periodically
 Structure:
 ```
@@ -159,9 +159,12 @@ data-fetch-lambda/
 - `handler.py` - Python code for the Lambda function that fetches new data from data.gov.sg.
 - `requirements.txt` - List of Python dependencies required by the Lambda function.
 
-### glue/
+#### glue/
 This folder contains AWS Glue ETL job scripts for data processing and transformation.
 
 - `GlueETL.py` - Python script for the AWS Glue ETL job that processes and transforms the raw resale property data.
+
+#### train.ipynb
+This Jupyter notebook contains the code for training a XGBoost model to predict resale property prices based on various features. 
 
 
